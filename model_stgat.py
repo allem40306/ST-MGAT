@@ -43,7 +43,7 @@ class stgat(nn.Module):
     def __init__(self, g, run_gconv, dropout=0.3, in_dim=2, out_dim=12,
                  residual_channels=40, dilation_channels=40,
                  skip_channels=320, end_channels=640,
-                 kernel_size=2, blocks=4, layers=2):
+                 kernel_size=2, blocks=4, layers=2, num_features=1):
         super().__init__()
         print("========batch_g_gat_2l===========")
         self.g = g
@@ -108,6 +108,7 @@ class stgat(nn.Module):
         self.receptive_field = receptive_field
         self.end_conv_1 = Conv2d(skip_channels, end_channels, (1, 1), bias=True)
         self.end_conv_2 = Conv2d(end_channels, out_dim, (1, 1), bias=True)
+        self.end_conv_3 = Conv2d(1, num_features, 1, bias=True)
 
     def forward(self, x):
         # Input shape is (bs, features, n_nodes, n_timesteps)
@@ -179,5 +180,8 @@ class stgat(nn.Module):
         x = F.relu(self.end_conv_1(x))
         # print("203 x:", x.shape)
         x = self.end_conv_2(x)  # downsample to (bs, seq_length, 207, nfeatures)
+        x = x.transpose(1, 3)
+        x = self.end_conv_3(x)  # downsample to (bs, seq_length, 207, nfeatures)
+        x = x.transpose(1, 3)
         # print("return x:", x.shape)
         return x

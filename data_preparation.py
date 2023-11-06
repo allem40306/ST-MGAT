@@ -83,7 +83,7 @@ def generate_train_val_test(args):
     xs, ys = x[permutation], y[permutation]
 
     num_test = round(num_samples * 0.2)
-    num_train = round(num_samples * 0.7)
+    num_train = round(num_samples * 0.6)
     num_val = num_samples - num_test - num_train
 
     # train

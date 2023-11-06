@@ -313,6 +313,7 @@ def add_nodes_edges(adj_filename, num_of_vertices):
     # print("g.edata['w']", g.edata['w'])
     print("g.node_attr", g.node_attr_schemes())  # no features assigned to nodes yield
     print("g.edge_attr", g.edge_attr_schemes())
+    g = dgl.add_self_loop(g)
     return g
 
 # adj_filename = 'data/sensor_graph/adj_mx_distance_normalized.csv'

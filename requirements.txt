@@ -1,8 +1,7 @@
 torch>=1.3.1
-dgl(or pip install dgl-cu101)
+dgl-cu111
 matplotlib
 numpy
 scipy
 pandas
 argparse
-os

@@ -75,12 +75,12 @@ def main():
 
     clip = 3
     run_gconv = 1
-    best_mae = 100
+    best_mae = 1e20
     continue_train = 0
     lr_decay_rate = 0.97
     record = []
 
-    model = stgat(g=g_temp, run_gconv=run_gconv)
+    model = stgat(g=g_temp, run_gconv=run_gconv, num_features=args.out_dim)
     model.to(device)
     model.zero_grad()
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
@@ -110,18 +110,19 @@ def main():
         for iter, (x, y) in enumerate(dataloader['train_loader'].get_iterator()):
             trainx = torch.Tensor(x).to(device).transpose(1, 3)  # x: (64, 2, 207, 12)
             trainy = torch.Tensor(y).to(device)     # (64, 12, 207, 2)
-            trainy = trainy[:, :, :, 0]             # only predict speed/ you can replace it with any features you want
+            trainy = trainy[:, :, :, :args.out_dim]             # only predict speed/ you can replace it with any features you want
 
             if trainx.shape[0] != args.batch_size:
                 continue
             # print("117:", trainx.shape)
             trainx = nn.functional.pad(trainx, (1, 0, 0, 0))    # ([64, 2, 207, 13])
             # print("119:", trainx.shape)
-            pred = model.forward(trainx).squeeze(3)
+            pred = model.forward(trainx)
             pred = scaler.inverse_transform(pred)
             # pred = test_scaler.inverse_transform(pred)
 
             if iter == 0:
+                print(type(pred))
                 print("trainy:", trainy.shape)      # ([64, 12, 207])
                 print("pred:", pred.shape)
 
@@ -152,10 +153,10 @@ def main():
         for iter, (x_val, y_val) in enumerate(dataloader['val_loader'].get_iterator()):
             inputs_val = torch.Tensor(x_val).to(device).transpose(1, 3)  # x: (64, 24, 207, 2)
             labels_val = torch.Tensor(y_val).to(device)
-            labels_val = labels_val[:, :, :, 0]
+            labels_val = labels_val[:, :, :, :args.out_dim]
 
             inputs_val = nn.functional.pad(inputs_val, (1, 0, 0, 0))
-            pred_val = model.forward(inputs_val).squeeze(3)
+            pred_val = model.forward(inputs_val)
             pred_val = scaler.inverse_transform(pred_val)
             # pred_val = test_scaler.inverse_transform(pred_val)
 
@@ -209,6 +210,7 @@ def main():
               flush=True)
         print("#" * 20)
 
+    torch.save(model.state_dict(), os.path.join(args.save, 'model.pkl'))
     # finished train
     print("=" * 10)
     print("Average Train Time: {:.4f} secs/epoch".format(np.mean(train_time)))
@@ -218,17 +220,17 @@ def main():
     # Testing
     bestid = np.argmin(his_loss)
     print("bestid: ", bestid)
-    model.load_state_dict(torch.load(best_path))
+    # model.load_state_dict(torch.load(best_path))
 
     outputs = []
     target = torch.Tensor(dataloader['y_test']).to(device)
-    target = target[:, :, :, 0]
+    target = target[:, :, :, :args.out_dim]
 
     for iter, (x, y) in enumerate(dataloader['test_loader'].get_iterator()):
         testx = torch.Tensor(x).to(device).transpose(1, 3)
         testx = nn.functional.pad(testx, (1, 0, 0, 0))
         with torch.no_grad():
-            pred = model.forward(testx).squeeze(3)
+            pred = model.forward(testx)
         outputs.append(pred)
 
     yhat = torch.cat(outputs, dim=0)
@@ -236,6 +238,7 @@ def main():
     test_record, amape, armse, amae = [], [], [], []
 
     pred = scaler.inverse_transform(yhat)
+    np.savez_compressed(f"{args.save}/result.npz", pred=pred, target=target)
     for i in range(12):
         pred_t = pred[:, i, :]
         real_target = target[:, i, :]

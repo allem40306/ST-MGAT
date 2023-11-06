@@ -28,9 +28,11 @@ def evaluate_all(pred, target):
     return mape, rmse, mae
 
 
-def run_demo(best_path, record_save_path):
+def run_demo(best_path, record_save_path, dataset):
     print("============Begin Testing============")
-    test_record_path = f'{record_save_path}/stgat_test_record.csv'
+    test_record_path = f'{record_save_path}/{dataset}_test_record.csv'
+    test_path = f'{record_save_path}/{dataset}_test.npz'
+    test_pred_path = f'{record_save_path}/{dataset}_test_pred.npz'
     dataloader = util.load_dataset(device, args.data_path, args.batch_size, args.batch_size, args.batch_size)
     g_temp = util.add_nodes_edges(adj_filename=args.adj_path, num_of_vertices=args.num_nodes)
     scaler = dataloader['scaler']
@@ -48,7 +50,7 @@ def run_demo(best_path, record_save_path):
     if torch.cuda.is_available():
         model.load_state_dict(torch.load(best_path))
     else:
-        model.load_state_dict(torch.load(best_path, map_location='cpu'))
+        model.load_state_dict(torch.load(best_path, map_location='cpu'), False)
 
     outputs = []
     target = torch.Tensor(dataloader['y_test']).to(device)
@@ -69,6 +71,8 @@ def run_demo(best_path, record_save_path):
     test_record, amape, armse, amae = [], [], [], []
 
     pred = scaler.inverse_transform(yhat)
+    np.savez_compressed(test_path, data = target)
+    np.savez_compressed(test_pred_path, data = pred)
     for i in range(12):
         pred_t = pred[:, i, :]
         real_target = target[:, i, :]
@@ -137,6 +141,7 @@ if __name__ == "__main__":
     # best_model_path = f'{base_path}/stgat_1.45.pkl'
     # # best_model_path = './pre_train_model/LA_dataset/stgat_2.84.pkl'
 
+    dataset = args.adj_path.split("/")[-1].split(".")[0]
     record_save_path = f'{base_path}/stgat'
     mkdir(record_save_path)
-    run_demo(best_model_path, record_save_path)
+    run_demo(best_model_path, record_save_path, dataset)
