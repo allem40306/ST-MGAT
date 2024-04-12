@@ -158,6 +158,7 @@ class stgat(nn.Module):
                 [batch_size, fea_size, num_of_vertices, step_size] = x.size()
                 # print("157 x:", x.shape)
                 batched_g = dgl.batch(batch_size * [self.g])
+                batched_g = batched_g.to('cuda:0')
                 h = x.permute(0, 2, 1, 3).reshape(batch_size*num_of_vertices, fea_size*step_size)
                 # print("159 h:", h.shape)
                 h = self.gat_layers[i](batched_g, h).mean(1)

@@ -153,8 +153,8 @@ def load_dataset(device, dataset_dir, batch_size, valid_batch_size=None, test_ba
     data = {}
     for category in ['train', 'val', 'test']:
         cat_data = np.load(os.path.join(dataset_dir, category + '.npz'))
-        data['x_' + category] = cat_data['x']
-        data['y_' + category] = cat_data['y']
+        data['x_' + category] = np.float32(cat_data['x'])
+        data['y_' + category] = np.float32(cat_data['y'])
     print("mean: ", data['x_train'][..., 0].mean(),)
     print("std: ", data['x_train'][..., 0].std(),)
     print("data['x_train'][..., 0]: ", data['x_train'][..., 0].shape, )

@@ -37,6 +37,7 @@ parser.add_argument('--residual', action="store_true", default=False, help='  ')
 parser.add_argument('--interval', type=int, default=100, help='')
 parser.add_argument('--num_epochs', type=int, default=100, help='')
 parser.add_argument('--save', type=str, default='./experiment/stgat/', help='save path')
+parser.add_argument('--dataset', type=str, default='./result', help='dataset name')
 parser.add_argument('--expid', type=int, default=1, help='experiment id')
 
 parser.add_argument('--seq_len', type=int, default=12, help='time length of inputs')
@@ -237,8 +238,11 @@ def main():
     yhat = yhat[:target.size(0), ...]
     test_record, amape, armse, amae = [], [], [], []
 
-    pred = scaler.inverse_transform(yhat)
-    np.savez_compressed(f"{args.save}/result.npz", pred=pred, target=target)
+    yhat_cpu = yhat.to('cpu')
+    pred = scaler.inverse_transform(yhat_cpu)
+    pred_numpy = pred.cpu()
+    target_numpy = target.cpu()
+    np.savez_compressed(f"{args.save}/{args.dataset}.npz", prediction=pred_numpy, target=target_numpy)
     for i in range(12):
         pred_t = pred[:, i, :]
         real_target = target[:, i, :]
